@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      target: backend
+    container_name: financial-data-backend
+    restart: unless-stopped
+    environment:
+      - FLASK_CONFIG=production
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
+      - DATABASE_URL=sqlite:///data/database.db
+    volumes:
+      - backend-data:/app/data
+      - backend-logs:/app/logs
+    networks:
+      - financial-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/platforms/stats/overview"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      target: frontend
+    container_name: financial-data-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - financial-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: financial-data-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - backend
+    networks:
+      - financial-network
+
+volumes:
+  backend-data:
+    driver: local
+  backend-logs:
+    driver: local
+  nginx-logs:
+    driver: local
+
+networks:
+  financial-network:
+    driver: bridge
