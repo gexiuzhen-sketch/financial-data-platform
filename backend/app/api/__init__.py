@@ -6,7 +6,7 @@ from flask import Blueprint
 api_bp = Blueprint('api', __name__, url_prefix='/api/v1')
 
 # 导入路由模块
-from . import platform, bank, export
+from . import platform, bank, export, init
 
 # 注册路由
 def init_routes():
@@ -14,3 +14,4 @@ def init_routes():
     platform.init_platform_routes(api_bp)
     bank.init_bank_routes(api_bp)
     export.init_export_routes(api_bp)
+    init.init_init_routes(api_bp)
