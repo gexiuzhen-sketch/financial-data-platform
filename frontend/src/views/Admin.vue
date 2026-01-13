@@ -62,7 +62,7 @@
         stripe
         v-loading="loading"
         class="dark-table"
-        :header-cell-style="{ background: '#1a1d2d', color: #8b92a8 }"
+        :header-cell-style="{ background: '#1a1d2d', color: '#8b92a8' }"
       >
         <el-table-column prop="report_month" label="报告月份" width="120" />
         <el-table-column prop="name" label="名称" width="150" />
@@ -234,7 +234,7 @@
 
       <template #footer>
         <el-button @click="importDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="importData" :loading="importing">导入</el-button>
+        <el-button type="primary" @click="handleImport" :loading="importing">导入</el-button>
       </template>
     </el-dialog>
 
@@ -479,7 +479,7 @@ const showImportDialog = () => {
 }
 
 // 导入数据
-const importData = async () => {
+const handleImport = async () => {
   importing.value = true
   try {
     const data = JSON.parse(importData.value)

@@ -29,7 +29,7 @@
               <span>平台数据</span>
             </el-menu-item>
             <el-menu-item index="/bank">
-              <el-icon><Bank /></el-icon>
+              <el-icon><Money /></el-icon>
               <span>银行数据</span>
             </el-menu-item>
             <el-menu-item index="/admin">
@@ -59,7 +59,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { House, DataLine, Bank, Setting } from '@element-plus/icons-vue'
+import { House, DataLine, Setting, Money } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const activeMenu = computed(() => route.path)
