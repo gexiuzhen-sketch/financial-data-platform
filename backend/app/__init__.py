@@ -39,9 +39,9 @@ def create_app(config_name='default'):
     # 注册蓝图
     register_blueprints(app)
 
-    # 创建数据库表
+    # 创建数据库表并初始化示例数据
     with app.app_context():
-        db.create_all()
+        init_database(app)
 
     return app
 
@@ -79,8 +79,60 @@ def register_blueprints(app):
     """注册蓝图"""
     from .api import api_bp, init_routes
 
+    # 先初始化路由（在注册蓝图之前）
+    init_routes()
+
     # 注册蓝图
     app.register_blueprint(api_bp)
 
-    # 初始化路由
-    init_routes()
+
+def init_database(app):
+    """初始化数据库表和示例数据"""
+    from .models.platform import Base as PlatformBase
+    from .models import Platform, Bank
+    from datetime import datetime
+    from sqlalchemy import select
+
+    # 创建所有表
+    PlatformBase.metadata.create_all(db.engine)
+    app.logger.info('数据库表创建完成')
+
+    # 检查是否需要初始化示例数据
+    result = db.session.execute(select(Platform).limit(1))
+    if not result.first():
+        app.logger.info('初始化示例数据...')
+
+        platforms = [
+            Platform(name='花呗', company_group='蚂蚁', platform_type='联合贷', loan_type='消费类',
+                    report_month=datetime(2024, 12, 1), loan_balance=1800.5, loan_issued=320.8,
+                    yoy_growth=15.2, mom_growth=2.5, data_source='示例数据'),
+            Platform(name='借呗', company_group='蚂蚁', platform_type='助贷', loan_type='消费类',
+                    report_month=datetime(2024, 12, 1), loan_balance=1200.3, loan_issued=250.6,
+                    yoy_growth=12.8, mom_growth=1.8, data_source='示例数据'),
+            Platform(name='微粒贷', company_group='腾讯', platform_type='联合贷', loan_type='消费类',
+                    report_month=datetime(2024, 12, 1), loan_balance=2100.8, loan_issued=380.2,
+                    yoy_growth=18.5, mom_growth=3.2, data_source='示例数据'),
+            Platform(name='京东金条', company_group='京东', platform_type='联合贷', loan_type='消费类',
+                    report_month=datetime(2024, 12, 1), loan_balance=750.3, loan_issued=165.4,
+                    yoy_growth=22.1, mom_growth=4.5, data_source='示例数据'),
+            Platform(name='美团借钱', company_group='美团', platform_type='助贷', loan_type='消费类',
+                    report_month=datetime(2024, 12, 1), loan_balance=420.8, loan_issued=85.2,
+                    yoy_growth=35.6, mom_growth=5.8, data_source='示例数据'),
+        ]
+
+        banks = [
+            Bank(name='招商银行', bank_type='股份制', report_month=datetime(2024, 12, 1),
+                total_internet_loan=5800.5, coop_platform_count=12, data_source='示例数据'),
+            Bank(name='兴业银行', bank_type='股份制', report_month=datetime(2024, 12, 1),
+                total_internet_loan=4200.3, coop_platform_count=10, data_source='示例数据'),
+            Bank(name='平安银行', bank_type='股份制', report_month=datetime(2024, 12, 1),
+                total_internet_loan=5100.8, coop_platform_count=11, data_source='示例数据'),
+        ]
+
+        for p in platforms:
+            db.session.add(p)
+        for b in banks:
+            db.session.add(b)
+
+        db.session.commit()
+        app.logger.info('示例数据初始化完成：5 条平台数据，3 条银行数据')

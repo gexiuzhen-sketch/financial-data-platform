@@ -65,7 +65,14 @@ class ProductionConfig(Config):
     DEBUG = False
     SQLALCHEMY_ECHO = False
     # 生产环境应该使用环境变量设置SECRET_KEY
-    SECRET_KEY = os.environ.get('SECRET_KEY')
+    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(32)
+
+    # Render 上使用数据库 URL 或默认 SQLite
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if DATABASE_URL:
+        # 如果提供 PostgreSQL 等 URL
+        SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    # 否则使用默认的 SQLite 配置
 
 
 class TestingConfig(Config):
