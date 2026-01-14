@@ -160,6 +160,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ArrowRight, Setting } from '@element-plus/icons-vue'
+import { platformApi } from '@/api'
 
 const overview = ref({
   total_balance: 0,
@@ -171,10 +172,9 @@ const overview = ref({
 
 const fetchOverview = async () => {
   try {
-    const res = await fetch('/api/v1/platforms/stats/overview')
-    const json = await res.json()
-    if (json.code === 0) {
-      overview.value = json.data
+    const res = await platformApi.getOverview()
+    if (res.code === 0) {
+      overview.value = res.data
     }
   } catch (error) {
     console.error('获取数据概览失败', error)
