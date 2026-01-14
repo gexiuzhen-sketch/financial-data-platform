@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_URL || 'https://financial-data-api-yfte.onrender.com/api/v1',
   timeout: 30000
 })
 
