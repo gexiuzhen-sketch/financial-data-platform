@@ -7,3 +7,13 @@ gunicorn==21.2.0
 
 # 环境变量
 python-dotenv==1.0.0
+
+# 数据处理
+pandas>=2.0.0
+openpyxl>=3.1.0
+
+# HTTP请求
+requests>=2.31.0
+
+# 定时任务
+apscheduler>=3.10.0
