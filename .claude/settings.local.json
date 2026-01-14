@@ -14,7 +14,8 @@
       "Bash(pip install:*)",
       "Bash(timeout:*)",
       "Bash(ping:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git config:*)"
     ]
   }
 }

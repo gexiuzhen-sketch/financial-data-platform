@@ -14,9 +14,9 @@ from app.models import Platform, Bank, DataSource
 # 创建应用实例
 app = create_app(os.getenv('FLASK_CONFIG') or 'default')
 
-# 暂时禁用调度器（待修复导入问题后启用）
-# from app.services import scheduler
-# scheduler.init_app(app)
+# 初始化调度器
+from app.services import scheduler
+scheduler.init_app(app)
 
 
 @app.shell_context_processor
@@ -159,8 +159,8 @@ if __name__ == '__main__':
     print('按 Ctrl+C 停止服务器')
     print('=' * 50)
 
-    # 暂时禁用调度器
-    # scheduler.start()
+    # 启动调度器
+    scheduler.start()
 
     try:
         app.run(
@@ -169,6 +169,5 @@ if __name__ == '__main__':
             debug=True
         )
     finally:
-        # 暂时禁用调度器
-        # scheduler.stop()
-        pass
+        # 停止调度器
+        scheduler.stop()

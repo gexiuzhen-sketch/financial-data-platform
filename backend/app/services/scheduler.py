@@ -6,14 +6,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import logging
 from datetime import datetime
-import sys
 import os
-
-# 添加父目录到路径
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from app import db
-from app.models.source import DataSource
+import traceback
 
 
 class ScraperScheduler:
@@ -29,6 +23,7 @@ class ScraperScheduler:
         self.scheduler = None
         self.app = app
         self.logger = logging.getLogger('scheduler')
+        self.scrapers_enabled = True  # 可通过环境变量控制
 
     def init_app(self, app):
         """
@@ -38,6 +33,13 @@ class ScraperScheduler:
             app: Flask应用实例
         """
         self.app = app
+
+        # 检查是否启用爬虫
+        self.scrapers_enabled = app.config.get('ENABLE_SCRAPERS', True)
+
+        if not self.scrapers_enabled:
+            self.logger.info('爬虫功能已禁用（通过配置）')
+            return
 
         # 创建调度器
         self.scheduler = BackgroundScheduler(
@@ -52,6 +54,11 @@ class ScraperScheduler:
 
     def _add_jobs(self):
         """添加所有定时任务"""
+
+        # 只在启用爬虫时添加任务
+        if not self.scrapers_enabled:
+            self.logger.info('爬虫功能已禁用，跳过添加定时任务')
+            return
 
         # 1. 研究报告爬虫 - 每周一10点执行
         self.scheduler.add_job(
@@ -93,24 +100,38 @@ class ScraperScheduler:
 
     def _run_research_scraper(self):
         """运行研究报告爬虫"""
+        if not self.scrapers_enabled:
+            return
+
         with self.app.app_context():
             self.logger.info('[定时任务] 开始执行研究报告爬虫')
             try:
+                from app.scrapers.research import ResearchScraper
+                from app import db
+
                 scraper = ResearchScraper()
-                result = scraper.run(db.session)
+                result = scraper.run(db.session, max_reports=3)
 
                 # 更新数据源状态
                 self._update_data_source_status('研究报告爬虫', result)
 
                 self.logger.info(f'[定时任务] 研究报告爬虫完成: {result}')
+            except ImportError as e:
+                self.logger.warning(f'[定时任务] 研究报告爬虫模块导入失败: {str(e)}')
             except Exception as e:
-                self.logger.error(f'[定时任务] 研究报告爬虫失败: {str(e)}')
+                self.logger.error(f'[定时任务] 研究报告爬虫失败: {str(e)}\n{traceback.format_exc()}')
 
     def _run_corporate_scraper(self):
         """运行上市公司财报爬虫"""
+        if not self.scrapers_enabled:
+            return
+
         with self.app.app_context():
             self.logger.info('[定时任务] 开始执行上市公司财报爬虫')
             try:
+                from app.scrapers.corporate import CorporateScraper
+                from app import db
+
                 # 爬取蚂蚁集团财报
                 scraper = CorporateScraper(company='蚂蚁集团')
                 result = scraper.run(db.session, max_reports=3)
@@ -119,14 +140,22 @@ class ScraperScheduler:
                 self._update_data_source_status('上市公司财报爬虫', result)
 
                 self.logger.info(f'[定时任务] 上市公司财报爬虫完成: {result}')
+            except ImportError as e:
+                self.logger.warning(f'[定时任务] 上市公司财报爬虫模块导入失败: {str(e)}')
             except Exception as e:
-                self.logger.error(f'[定时任务] 上市公司财报爬虫失败: {str(e)}')
+                self.logger.error(f'[定时任务] 上市公司财报爬虫失败: {str(e)}\n{traceback.format_exc()}')
 
     def _run_official_scraper(self):
         """运行官方监管数据爬虫"""
+        if not self.scrapers_enabled:
+            return
+
         with self.app.app_context():
             self.logger.info('[定时任务] 开始执行官方监管数据爬虫')
             try:
+                from app.scrapers.official import OfficialScraper
+                from app import db
+
                 scraper = OfficialScraper(source='中国人民银行')
                 result = scraper.run(db.session, max_files=5)
 
@@ -134,14 +163,22 @@ class ScraperScheduler:
                 self._update_data_source_status('官方监管数据爬虫', result)
 
                 self.logger.info(f'[定时任务] 官方监管数据爬虫完成: {result}')
+            except ImportError as e:
+                self.logger.warning(f'[定时任务] 官方监管数据爬虫模块导入失败: {str(e)}')
             except Exception as e:
-                self.logger.error(f'[定时任务] 官方监管数据爬虫失败: {str(e)}')
+                self.logger.error(f'[定时任务] 官方监管数据爬虫失败: {str(e)}\n{traceback.format_exc()}')
 
     def _run_media_scraper(self):
         """运行财经媒体爬虫"""
+        if not self.scrapers_enabled:
+            return
+
         with self.app.app_context():
             self.logger.info('[定时任务] 开始执行财经媒体爬虫')
             try:
+                from app.scrapers.media import MediaScraper
+                from app import db
+
                 scraper = MediaScraper(source='新浪财经')
                 result = scraper.run(db.session, keywords=['消费金融'], days=3, max_articles=10)
 
@@ -149,8 +186,10 @@ class ScraperScheduler:
                 self._update_data_source_status('财经媒体爬虫', result)
 
                 self.logger.info(f'[定时任务] 财经媒体爬虫完成: {result}')
+            except ImportError as e:
+                self.logger.warning(f'[定时任务] 财经媒体爬虫模块导入失败: {str(e)}')
             except Exception as e:
-                self.logger.error(f'[定时任务] 财经媒体爬虫失败: {str(e)}')
+                self.logger.error(f'[定时任务] 财经媒体爬虫失败: {str(e)}\n{traceback.format_exc()}')
 
     def _update_data_source_status(self, source_name: str, result: dict):
         """
@@ -161,6 +200,9 @@ class ScraperScheduler:
             result: 爬取结果
         """
         try:
+            from app import db
+            from app.models.source import DataSource
+
             data_source = db.session.query(DataSource).filter_by(name=source_name).first()
 
             if not data_source:
@@ -176,7 +218,7 @@ class ScraperScheduler:
 
             # 更新状态
             data_source.last_scrape_at = datetime.now()
-            data_source.scrape_status = result['status']
+            data_source.scrape_status = result.get('status', 'unknown')
 
             db.session.commit()
 
@@ -194,6 +236,8 @@ class ScraperScheduler:
             self.logger.info(f'已添加 {len(jobs)} 个定时任务:')
             for job in jobs:
                 self.logger.info(f'  - {job.name} (ID: {job.id}, 下次运行: {job.next_run_time})')
+        else:
+            self.logger.info('调度器未启动（可能未初始化或已在运行）')
 
     def stop(self):
         """停止调度器"""

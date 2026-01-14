@@ -52,6 +52,8 @@ class Config:
     # 定时任务配置
     SCHEDULER_API_ENABLED = True
     SCHEDULER_TIMEZONE = 'Asia/Shanghai'
+    # 是否启用爬虫功能（可通过环境变量 ENABLE_SCRAPERS 控制）
+    ENABLE_SCRAPERS = os.environ.get('ENABLE_SCRAPERS', 'true').lower() == 'true'
 
 
 class DevelopmentConfig(Config):
